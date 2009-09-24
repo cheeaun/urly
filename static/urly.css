@@ -1,0 +1,27 @@
+body{
+  text-align: center;
+}
+
+#container {
+  width: 500px;
+  margin: auto;
+}
+
+#url-form{
+  margin: 2em 0;
+}
+
+#url-form label{
+  font-size: 1.2em;
+}
+
+input#url{
+  width: 100%;
+  font-size: 2em;
+  margin: 8px 0;
+}
+
+#url-form input.button{
+  width: 50%;
+  font-size: 2em;
+}

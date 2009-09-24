@@ -5,37 +5,45 @@
 // default_href - default href to dump into text area. Why do we have this?
 // error_href - set when we have an improperly formatted href
 {% endcomment %}
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html>
-<head><title>ur.ly - dang short urls</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<script type="text/javascript" src="static/urly.js"></script>
-</head>
-<body style="font-family: verdana, arial; font-size: 80%; text-align: center">
-<div style="margin: 0 auto; width: 600px; border: 1px solid #cccccc; padding: 10px; text-align: left;">
 
-<span style="float: right"><a href="http://code.google.com/appengine/"><img border="0" src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" /></a></span>
-<a href="/"><img border="0" style="padding-top: 3px;" src="static/urly.gif" alt=" - dang short urls" /></a>
+<!DOCTYPE html>
+<title>ur.ly - dang short urls</title>
+<link rel="stylesheet" href="http://github.com/cheeaun/cacss/raw/master/ca.css">
+<link rel="stylesheet" href="static/urly.css">
+<script src="static/urly.js"></script>
+<div id="container">
+  
+  <h1><a href="/"><img src="static/urly.gif" alt="ur.ly - dang short urls"></a></h1>
 
-{% if error_404 or urly or error_href %}
-<div style="margin-top: 5px; margin-bottom: 15px; padding: 10px; background-color: #e6e6ff; border: 1px dashed #cccccc;">
-  {% if error_404 %}Oops - we couldn't find that urly.{% endif %}
-  {% if error_href %}Oops - that address doesn't look right... we can't create a dang short url from it.{% endif %}
-  {% if urly %}
-  {{ urly.href }} is now dang short, and <b>its already on your clipboard</b>.<br />
-  <input id="href" name="href" type="text" style="margin-top: 5px; padding: 3px; width: 300px; border: 1px solid #cccccc;" value="http://ur.ly/{{ urly.code }}" />
-  <script type="text/javascript" language="javascript">window.onload = copy("http://ur.ly/{{ urly.code }}");</script>
-  <script type="text/javascript" language="javascript">window.onload = focus("href");</script>
-  &nbsp;&nbsp;<a href="http://ur.ly/{{ urly.code }}">Try It</a>
+  {% if error_404 or urly or error_href %}
+    {% if error_404 %}
+      <p class="error">Oops - we couldn't find that urly.</p>
+    {% endif %}
+    {% if error_href %}
+      <p class="error">Oops - that address doesn't look right... we can't create a dang short url from it.</p>
+    {% endif %}
+    {% if urly %}
+      <div class="info">
+        <p>{{ urly.href }} is now dang short, and <strong>its already on your clipboard</strong>.</p>
+        <p><input type="text" value="http://ur.ly/{{ urly.code }}"></p>
+        <script>window.onload = function(){
+          copy("http://ur.ly/{{ urly.code }}");
+          focus("href");
+        };
+        </script>
+        <p><a href="http://ur.ly/{{ urly.code }}">Try It</a></p>
+      </div>
+    {% endif %}
   {% endif %}
-</div>
-{% endif %}
 
-<div style="padding-bottom: 3px;">Enter a long URL below and we'll make it dang short:</div>
-<form action="new.html" method="get" accept-charset="utf-8">
-<textarea style="margin-bottom: 5px; width: 100%; border: 1px solid #cccccc;" name="href" id="href" rows="4">{{ default_href }}</textarea>
-<input type="submit" value="Create" />
-</form>
-<div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #dddddd;"><span style="float: right"><a href="http://code.google.com/p/urly/">Project</a> <a href="http://code.google.com/p/urly/wiki/APIDocumentation">API</a></span>Drag this link to your browser toolbar: <a href="javascript:location.href='http://ur.ly/new.html?href='+encodeURIComponent(location.href)">ur.ly!</a></div>
+  <form action="/" method="get" accept-charset="utf-8" id="url-form">
+      <label for="url">Enter a long URL below and we'll make it dang short:</label>
+      <input name="href" id="url" value="{{ default_href }}" class="text">
+      <input type="submit" value="Shorten" class="button">
+  </form>
+
+  <p>Drag this link to your browser toolbar: <a href="javascript:location.href='http://ur.ly/new.html?href='+encodeURIComponent(location.href)">ur.ly!</a></p>
+  <p><a href="http://code.google.com/p/urly/">Project</a> &middot; <a href="http://code.google.com/p/urly/wiki/APIDocumentation">API</a></p>
+  <p><a href="http://code.google.com/appengine/"><img border="0" src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif"></a></p>
+  
 </div>
-</div></body></html>
