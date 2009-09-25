@@ -9,18 +9,20 @@
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
-import logging
+from google.appengine.api import urlfetch
+import logging, re
 
 class Urly(db.Model):
     """Our one-and-only model"""  
-    href = db.LinkProperty(required=True)
+    url = db.LinkProperty(required=True)
     created_at = db.DateTimeProperty(auto_now_add=True)
 
-    KEY_BASE = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    BASE = 62
+    # Crockford's Base 32 http://www.crockford.com/wrmg/base32.html
+    KEY_BASE = "0123456789abcdefghjkmnpqrstvwxyz"
+    BASE = 32
 
     def code(self):
-        """Return our code, our base-62 encoded id"""
+        """Return our code, our base-32 encoded id"""
         if not self.is_saved():
             return None
         nid = self.key().id()
@@ -33,25 +35,25 @@ class Urly(db.Model):
         
     def to_json(self):
         """JSON is so simple that we won't worry about a template at this point"""
-        return "{\"code\":\"%s\",\"href\":\"%s\"}\n" % (self.code(), self.href);
+        return "{\"code\":\"%s\", \"url\":\"%s\", \"ok\":%s, \"status_code\":%d}\n" % (self.code(), self.url, "true", 200);
     
     def to_xml(self):
         """Like JSON, XML is simple enough that we won't template now"""
         msg = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        msg += "<urly code=\"%s\" href=\"%s\" />\n" % (self.code(), self.href)
+        msg += "<urly code=\"%s\" url=\"%s\" ok=\"%s\" status_code=\"%d\" />\n" % (self.code(), self.url, "true", 200)
         return msg
 
     def save_in_cache(self):
         """We don't really care if this fails"""
         memcache.set(self.code(), self)
-
+    
     @staticmethod
-    def find_or_create_by_href(href):
+    def find_or_create_by_url(url):
         query = db.Query(Urly)
-        query.filter('href =', href)
+        query.filter('url =', url)
         u = query.get()
         if not u:
-            u = Urly(href=href)
+            u = Urly(url=url)
             u.put()
             u.save_in_cache()
         return u
@@ -75,7 +77,7 @@ class Urly(db.Model):
         
         if u is not None:
             logging.info("Urly.find_by_code() cache HIT: %s", str(code))
-            return u        
+            return u
 
         logging.info("Urly.find_by_code() cache MISS: %s", str(code))
         aid = Urly.code_to_id(code)
@@ -86,3 +88,21 @@ class Urly(db.Model):
             return u
         except db.BadValueError:
             return None
+        except db.BadKeyError:
+            return None
+            
+    @staticmethod
+    def validate_url(url):
+        """Validate the URL?"""
+        exp = re.compile('^https?://.+')
+        match = exp.match(url)
+        if match:
+            try:
+                result = urlfetch.fetch(url, method="HEAD")
+                if result.status_code == 405:
+                    logging.info("The URL returns 405, no HEAD request")
+                    result = urlfetch.fetch(url, allow_truncated=True)
+                if result.status_code == 200: return True
+            except urlfetch.Error:
+                logging.error("The URL doesn't exist")
+        return False

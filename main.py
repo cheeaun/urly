@@ -14,56 +14,85 @@
 __author__ = 'Adam Stiles'
 
 """ 
-All Urly records in the database have an id and an href. We base62 that
+All Urly records in the database have an id and an url. We base32 that
 integer id to create a short code that represents that Urly.
 
 /{code}                             Redirect user to urly with this code
 /{code}(.json|.xml|.html)           Show user formatted urly with this code
-/new(.json|.xml|.html)?href={href}  Create a new urly with this href or
+/new(.json|.xml|.html)?url={url}  Create a new urly with this url or
                                     return existing one if it already exists
                                     Note special handling for 'new' code
-                                    when we have a href GET parameter 'cause
+                                    when we have a url GET parameter 'cause
                                     'new' by itself looks like a code
 """
 import wsgiref.handlers
 import re, os, logging
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from google.appengine.api import users
 from urly import Urly
 from view import MainView
 
 class MainHandler(webapp.RequestHandler):
-     """All non-static requests go through this handler.
-     The code and format parameters are pre-populated by
-     our routing regex... see main() below.
-     """
-     def get(self, code, format):
+    """All non-static requests go through this handler.
+    The code and format parameters are pre-populated by
+    our routing regex... see main() below.
+    """
+    def get(self, code, format):
         if (code is None):
             MainView.render(self, 200, None, format)
+            user = users.get_current_user()
+            if user: self.response.out.write("<a href=\"" + users.create_logout_url('/') + "\">Logout</a>")
             return
         
-        href = self.request.get('href').strip()
-        if (code == 'new') and (href is not None):
-            try:
-                u = Urly.find_or_create_by_href(href)
-                if u is not None:
-                    MainView.render(self, 200, u, format)
-                else:
-                    logging.error("Error creating urly by href: %s", str(href))
-                    MainView.render(self, 400, None, format, href)
-            except db.BadValueError:
-                # href parameter is bad
-                MainView.render(self, 400, None, format, href)
+        u = Urly.find_by_code(str(code))
+        if u is not None:
+            MainView.render(self, 200, u, format, preview=True)
         else:
-            u = Urly.find_by_code(str(code))
-            if u is not None:
-                MainView.render(self, 200, u, format)
+            MainView.render(self, 404, None, format)
+
+class ShortenHandler(webapp.RequestHandler):
+    def get(self, format):
+        url = self.request.get('url').strip()
+        if url is not None:
+            try:
+                valid = Urly.validate_url(url)
+                if valid:
+                    u = Urly.find_or_create_by_url(url)
+                    if u is not None:
+                        MainView.render(self, 200, u, format)
+                    else:
+                        logging.error("Error creating urly by url: %s", str(url))
+                        MainView.render(self, 400, None, format, url)
+                else:
+                    logging.error("Error creating urly by url: %s", str(url))
+                    MainView.render(self, 400, None, format, url)
+            except db.BadValueError:
+                # url parameter is bad
+                MainView.render(self, 400, None, format, url)
+        else:
+            self.redirect('/')
+        
+class AdminHandler(webapp.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if user:
+            if users.is_current_user_admin():
+                values = {
+                    
+                }
+                path = os.path.join(os.path.dirname(__file__), 'admin.html')
+                self.response.out.write(template.render(path, values))
             else:
-                MainView.render(self, 404, None, format)
+                self.redirect('/')
+        else:
+            self.redirect(users.create_login_url('/admin'))
 
 def main():
     application = webapp.WSGIApplication([
-        ('/([a-zA-Z0-9]{1,6})?(.xml|.json|.html)?', MainHandler)
+        ('/([a-hjkmnp-tvz0-9]+)?(.xml|.json|.html)?', MainHandler),
+        ('/shorten(.xml|.json|.html)', ShortenHandler),
+        ('/admin?', AdminHandler)
     ], debug=True)
     wsgiref.handlers.CGIHandler().run(application)
 

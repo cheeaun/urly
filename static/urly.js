@@ -1,29 +1,55 @@
-//-----------------------------------------------------------------------------
-function copy(text2copy) {
-  if (window.clipboardData) {
-    window.clipboardData.setData("Text",text2copy);
-  } else {
-    var flashcopier = 'flashcopier';
-    if(!document.getElementById(flashcopier)) {
-      var divholder = document.createElement('div');
-      divholder.id = flashcopier;
-      document.body.appendChild(divholder);
+window.onload = function(){
+  var $ = function(id){ return document.getElementById(id) };
+  
+  var addEvent = function(obj, type, fn){
+    if (obj.attachEvent){
+      obj['e' + type + fn] = fn;
+      obj[type + fn] = function(){ obj['e' + type + fn](window.event) };
+      obj.attachEvent('on' + type, obj[type + fn]);
+    } else {
+      obj.addEventListener(type, fn, false);
     }
-    document.getElementById(flashcopier).innerHTML = '';
-    var divinfo = '<embed src="static/clipboard.swf" FlashVars="clipboard='+escape(text2copy)+'" width="0" height="0" type="application/x-shockwave-flash"></embed>';
-    document.getElementById(flashcopier).innerHTML = divinfo;
+  };
+  
+  var longURL = $('url');
+  if (longURL){
+    longURL.focus();
   }
-}
-
-//-----------------------------------------------------------------------------
-function focus(id)
-{
-  var el = document.getElementById(id);
-  if (el != null) {
-    el.focus();
-    el.select();
+  
+  var URLform = $('url-form');
+  if(URLform){
+    addEvent(URLform, 'submit', function(e){
+      if (longURL && longURL.value != ''){
+        var val = longURL.value = longURL.value.replace('/^\s+|\s+$/g', ''); // trim
+        if (!(/^https?:\/\/.*/i).test(val)){
+          e.preventDefault();
+          longURL.focus();
+          longURL.select();
+        }
+      } else {
+        e.preventDefault();
+        longURL.focus();
+        longURL.select();
+      }
+    });
   }
-}
-
-//-----------------------------------------------------------------------------
-
+  
+  var shortURL = $('shorturl');
+  if (!shortURL) return;
+  
+  ZeroClipboard.setMoviePath('/static/ZeroClipboard.swf');
+  clip = new ZeroClipboard.Client();
+  clip.glue('shorturl-copy');
+  var setText = function(){
+    clip.setText(shortURL.value);
+  };
+  clip.addEventListener('load', setText);
+  clip.addEventListener('mouseOver', setText);
+  
+  shortURL.focus();
+  shortURL.select();
+  addEvent(shortURL, 'focus', function(){
+    shortURL.select();
+    setText();
+  });
+};

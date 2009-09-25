@@ -3,8 +3,46 @@ body{
 }
 
 #container {
-  width: 500px;
+  width: 600px;
   margin: auto;
+}
+
+.preview{
+    color: inherit;
+    background-color: #FFF961;
+    padding: 2em 2em .1em;
+    margin: 0 0 1em;
+}
+
+.preview .shorturl{
+    font-size: 2em;
+}
+
+.info{
+  color: inherit;
+  background-color: #FFF961;
+  padding: 2em 2em .1em;
+  margin: 0 0 1em;
+}
+
+.info .longurl{
+  display: block;
+  font-size: 2em;
+}
+
+.info input.text{
+  font-size: 2em;
+  text-align: center;
+}
+
+.info button{
+  font-size: 2em;
+}
+
+.error{
+  color: inherit;
+  background-color: #FFB8AA;
+  padding: 1em;
 }
 
 #url-form{
