@@ -16,6 +16,8 @@ class Urly(db.Model):
     """Our one-and-only model"""  
     url = db.LinkProperty(required=True)
     created_at = db.DateTimeProperty(auto_now_add=True)
+    ip_address = db.StringProperty()
+    clicks = db.IntegerProperty(default=0)
 
     # Crockford's Base 32 http://www.crockford.com/wrmg/base32.html
     KEY_BASE = "0123456789abcdefghjkmnpqrstvwxyz"
@@ -45,7 +47,7 @@ class Urly(db.Model):
 
     def save_in_cache(self):
         """We don't really care if this fails"""
-        memcache.set(self.code(), self)
+        memcache.set(self.code(), self.key().id())
     
     @staticmethod
     def find_or_create_by_url(url):
@@ -69,18 +71,17 @@ class Urly(db.Model):
     @staticmethod
     def find_by_code(code):
         try:
-            u = memcache.get(code)
+            aid = memcache.get(code)
         except:
             # http://code.google.com/p/googleappengine/issues/detail?id=417
             logging.error("Urly.find_by_code() memcached error")
-            u = None
         
-        if u is not None:
+        if aid is not None:
             logging.info("Urly.find_by_code() cache HIT: %s", str(code))
-            return u
-
-        logging.info("Urly.find_by_code() cache MISS: %s", str(code))
-        aid = Urly.code_to_id(code)
+        else:
+            logging.info("Urly.find_by_code() cache MISS: %s", str(code))
+            aid = Urly.code_to_id(code)
+        
         try:
             u = Urly.get_by_id(int(aid))
             if u is not None:

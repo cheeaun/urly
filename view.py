@@ -7,7 +7,7 @@
 # OF ANY KIND, either express or implied. See the License for the specific 
 # language governing permissions and limitations under the License.
 
-import os
+import os, logging
 from google.appengine.ext.webapp import template
 
 class MainView():
@@ -39,6 +39,8 @@ class MainView():
         """ We never have an error if we have an urly to show """
         if (urly is not None):
             if (format is None):
+                urly.clicks += 1
+                urly.put()
                 handler.redirect(urly.url)
             elif (format == '.json'):
                 render_raw(handler, "application/javascript", urly.to_json())
